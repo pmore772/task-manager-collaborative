@@ -1,8 +1,9 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '@environments/environment';
-import { DashboardData } from '../models/dashboard.model';
+import { DashboardData, DashboardStatistics } from '../models/dashboard.model';
+import { Task } from '../models/task.model';
 
 interface ApiResponse<T> {
   data: T;
@@ -20,6 +21,10 @@ export class DashboardService {
 
   readonly dashboardData = this.dashboardDataSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
+  
+  // Computed signals for easier template access
+  readonly stats = computed<DashboardStatistics | null>(() => this.dashboardDataSignal()?.statistics ?? null);
+  readonly recentTasks = computed<Task[]>(() => this.dashboardDataSignal()?.recent_tasks ?? []);
 
   constructor(private http: HttpClient) {}
 

@@ -6,7 +6,7 @@ import { ProjectService } from '@app/core/services/project.service';
 import { TaskService } from '@app/core/services/task.service';
 import { UserService } from '@app/core/services/user.service';
 import { Project, UpdateProjectData } from '@app/core/models/project.model';
-import { Task, TaskStatus, TaskPriority, CreateTaskData, UpdateTaskData, UpdateTaskStatusData } from '@app/core/models/task.model';
+import { Task, TaskStatus, TaskPriority, CreateTaskData, UpdateTaskData } from '@app/core/models/task.model';
 import { ProjectFormComponent } from '../project-form/project-form.component';
 import { TaskFormComponent } from '../../tasks/task-form/task-form.component';
 
@@ -231,7 +231,7 @@ import { TaskFormComponent } from '../../tasks/task-form/task-form.component';
         <app-task-form
           [task]="selectedTask()"
           [projectId]="project()!.id"
-          [users]="userService.users()"
+          [users]="[]"
           (save)="onSaveTask($event)"
           (delete)="onDeleteTask($event)"
           (statusChange)="onStatusChange($event)"
@@ -573,12 +573,12 @@ export class ProjectDetailComponent implements OnInit {
     const projectId = Number(this.route.snapshot.paramMap.get('id'));
     this.loadProject(projectId);
     this.loadTasks(projectId);
-    this.userService.getAll().subscribe();
+    this.userService.search().subscribe();
   }
 
   private loadProject(id: number): void {
-    this.projectService.getOne(id).subscribe({
-      next: (project) => this.project.set(project)
+    this.projectService.getById(id).subscribe({
+      next: (response) => this.project.set(response.data)
     });
   }
 
@@ -609,8 +609,8 @@ export class ProjectDetailComponent implements OnInit {
     const project = this.project();
     if (project) {
       this.projectService.update(project.id, data).subscribe({
-        next: (updated) => {
-          this.project.set(updated);
+        next: (response) => {
+          this.project.set(response.data);
           this.closeProjectModal();
         }
       });
@@ -634,13 +634,14 @@ export class ProjectDetailComponent implements OnInit {
 
   onSaveTask(data: CreateTaskData | UpdateTaskData): void {
     const task = this.selectedTask();
+    const projectId = this.project()?.id;
     
     if (task) {
       this.taskService.update(task.id, data as UpdateTaskData).subscribe({
         next: () => this.closeTaskModal()
       });
-    } else {
-      this.taskService.create(data as CreateTaskData).subscribe({
+    } else if (projectId) {
+      this.taskService.create(projectId, data as CreateTaskData).subscribe({
         next: () => this.closeTaskModal()
       });
     }
@@ -655,7 +656,7 @@ export class ProjectDetailComponent implements OnInit {
   }
 
   onStatusChange({ task, status }: { task: Task; status: TaskStatus }): void {
-    this.taskService.updateStatus(task.id, { status }).subscribe();
+    this.taskService.updateStatus(task.id, status).subscribe();
   }
 
   isOverdue(task: Task): boolean {

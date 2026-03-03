@@ -31,7 +31,7 @@ import { ProjectService } from '@app/core/services/project.service';
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ dashboardService.stats()?.total_projects || 0 }}</span>
+              <span class="stat-value">{{ dashboardService.stats()?.projects_count || 0 }}</span>
               <span class="stat-label">Projets</span>
             </div>
           </div>
@@ -59,7 +59,7 @@ import { ProjectService } from '@app/core/services/project.service';
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ dashboardService.stats()?.completed_tasks || 0 }}</span>
+              <span class="stat-value">{{ dashboardService.stats()?.done_tasks || 0 }}</span>
               <span class="stat-label">Complétées</span>
             </div>
           </div>
@@ -72,8 +72,8 @@ import { ProjectService } from '@app/core/services/project.service';
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ dashboardService.stats()?.pending_tasks || 0 }}</span>
-              <span class="stat-label">En attente</span>
+              <span class="stat-value">{{ dashboardService.stats()?.in_progress_tasks || 0 }}</span>
+              <span class="stat-label">En cours</span>
             </div>
           </div>
 
@@ -101,8 +101,8 @@ import { ProjectService } from '@app/core/services/project.service';
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ dashboardService.stats()?.total_users || 0 }}</span>
-              <span class="stat-label">Utilisateurs</span>
+              <span class="stat-value">{{ dashboardService.stats()?.todo_tasks || 0 }}</span>
+              <span class="stat-label">À faire</span>
             </div>
           </div>
         </div>
@@ -483,8 +483,7 @@ export class DashboardComponent implements OnInit {
   Math = Math;
 
   ngOnInit(): void {
-    this.dashboardService.getStats().subscribe();
-    this.dashboardService.getRecentTasks().subscribe();
+    this.dashboardService.getData().subscribe();
     this.projectService.getAll().subscribe();
   }
 
