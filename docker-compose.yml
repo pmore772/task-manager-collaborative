@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: task-manager-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: task_manager
+      MYSQL_USER: task_user
+      MYSQL_PASSWORD: task_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - task-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Laravel Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: task-manager-backend
+    restart: unless-stopped
+    working_dir: /var/www
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=base64:your-app-key-here
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=task_manager
+      - DB_USERNAME=task_user
+      - DB_PASSWORD=task_password
+      - JWT_SECRET=your-jwt-secret-here
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www
+      - /var/www/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - task-network
+    command: >
+      sh -c "
+        composer install --no-interaction &&
+        php artisan key:generate --force &&
+        php artisan jwt:secret --force &&
+        php artisan migrate --force &&
+        php artisan db:seed --force &&
+        php artisan serve --host=0.0.0.0 --port=8000
+      "
+
+  # Angular Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: task-manager-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - task-network
+    command: npm start -- --host 0.0.0.0 --disable-host-check
+
+  # phpMyAdmin (optional)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: task-manager-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: task_user
+      PMA_PASSWORD: task_password
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - task-network
+
+networks:
+  task-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
